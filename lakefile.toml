@@ -1,0 +1,13 @@
+name = "trackb_lean_replay_checker"
+version = "0.1.0"
+defaultTargets = ["TrackBReplay", "AxiomCheck", "trackb-replay-check"]
+
+[[lean_lib]]
+name = "TrackBReplay"
+
+[[lean_lib]]
+name = "AxiomCheck"
+
+[[lean_exe]]
+name = "trackb-replay-check"
+root = "Main"

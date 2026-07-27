@@ -1,0 +1,41 @@
+{
+  "workflow": "unauthorized_send",
+  "schema_version": "0.1",
+  "bound": 2,
+  "status": "UNSAFE",
+  "violation": {
+    "condition": {
+      "authorized": false,
+      "sent": true
+    },
+    "first_bad_step": 1
+  },
+  "trace": [
+    {
+      "step": 0,
+      "action": null,
+      "state_before": null,
+      "state_delta": {},
+      "state_after": {
+        "authorized": false,
+        "sent": false
+      }
+    },
+    {
+      "step": 1,
+      "action": "send",
+      "state_before": {
+        "authorized": false,
+        "sent": false
+      },
+      "state_delta": {
+        "sent": true
+      },
+      "state_after": {
+        "authorized": false,
+        "sent": true
+      }
+    }
+  ],
+  "claim_boundary": "UNSAFE means a bad replay exists within the configured bound and model assumptions. SAFE_WITHIN_BOUND does not prove global safety."
+}

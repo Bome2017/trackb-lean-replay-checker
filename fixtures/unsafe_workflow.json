@@ -1,0 +1,39 @@
+{
+  "schema_version": "0.1",
+  "name": "unauthorized_send",
+  "bound": 2,
+  "state_variables": {
+    "authorized": "bool",
+    "sent": "bool"
+  },
+  "initial_state": {
+    "authorized": false,
+    "sent": false
+  },
+  "actions": [
+    {
+      "name": "authorize",
+      "pre": {
+        "authorized": false
+      },
+      "effects": {
+        "authorized": true
+      }
+    },
+    {
+      "name": "send",
+      "pre": {
+        "sent": false
+      },
+      "effects": {
+        "sent": true
+      }
+    }
+  ],
+  "forbidden": {
+    "all": {
+      "authorized": false,
+      "sent": true
+    }
+  }
+}

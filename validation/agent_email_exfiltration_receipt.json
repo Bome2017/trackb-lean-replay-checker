@@ -1,0 +1,36 @@
+{
+  "checker": {
+    "bytes": 109114104,
+    "lean_toolchain": "leanprover/lean4:v4.32.1",
+    "sha256": "a0ad104fc4a2e62956454d8dfb2538b8f945adbbd578c99b2d38ac0118c095a2"
+  },
+  "checker_exit_code": 0,
+  "checker_stderr": "",
+  "checker_stdout": "PASS workflow=agent_email_exfiltration actions=3 bound=5",
+  "claim": "The exact workflow/result pair contains a valid TrackB v0.1 counterexample trace under the parsed bounded Boolean semantics.",
+  "inputs": {
+    "result": {
+      "bytes": 2800,
+      "name": "result.json",
+      "sha256": "3faef75267325b7c0187c2b6b771722c45911432c4df36e66f0bb5bbd1060f54"
+    },
+    "workflow": {
+      "bytes": 1561,
+      "name": "workflow.json",
+      "sha256": "5175dcb7bd4b6b16ed06adac609beeddf99b854bc1a48b2460e6d38e9d97ace1"
+    }
+  },
+  "nonclaims": [
+    "No global safety claim.",
+    "No SAFE_WITHIN_BOUND proof.",
+    "No proof that the Python BFS or Z3 search is complete or globally first.",
+    "No production certification."
+  ],
+  "receipt_schema": "trackb-lean-replay-receipt/0.1",
+  "trusted_boundary": [
+    "Lean compiler, kernel, code generator, runtime, and JSON parser",
+    "Operating-system file I/O and process execution",
+    "This Python wrapper for SHA-256 calculation and immutable-copy launch"
+  ],
+  "verdict": "PASS"
+}
