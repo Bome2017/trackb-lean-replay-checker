@@ -1,0 +1,12 @@
+cff-version: 1.2.0
+message: "If you use this bounded counterexample checker, cite this release."
+title: "TrackB Lean Replay Checker"
+type: software
+authors:
+  - family-names: "Mehat"
+    given-names: "Sanjit Singh"
+version: 0.1.0
+date-released: 2026-07-27
+repository-code: "https://github.com/Bome2017/trackb-lean-replay-checker"
+url: "https://github.com/Bome2017/trackb-lean-replay-checker/releases/tag/v0.1.0"
+license: Apache-2.0
