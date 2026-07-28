@@ -1,5 +1,13 @@
 # TrackB v0.2 validation report
 
+> **Historical validation record — not current.** This report applies only to
+> commit `5a637f8c29d26b79160c6812984cd610ac0d78f6`. Its bounded-search
+> semantic theorem remained valid, but the exact emitted `SAFE_WITHIN_BOUND`
+> artifact was not bound to that proof, and the reported 28-query axiom audit
+> did not cover all 46 explicit theorem declarations. Those limitations are
+> repaired only in the separately validated v0.2.1 successor described in
+> [RELEASE_NOTES_v0.2.1.md](RELEASE_NOTES_v0.2.1.md).
+
 Date: 2026-07-27
 
 Status: local release candidate; no v0.2 tag or remote push is asserted by this

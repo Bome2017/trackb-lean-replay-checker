@@ -88,8 +88,10 @@ EXPECTED_AXIOM_THEOREMS = {
     ),
 }
 ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
-THEOREM_DECLARATION = re.compile(
-    r"^[ \t]*theorem[ \t]+([A-Za-z_][A-Za-z0-9_?'.]*)",
+PROOF_DECLARATION = re.compile(
+    r"^[ \t]*(?:@\[[^\n]*\][ \t]*)*"
+    r"(?:(?:private|protected|local)[ \t]+)*"
+    r"(?:theorem|lemma)[ \t]+([A-Za-z_][A-Za-z0-9_?'.]*)",
     re.MULTILINE,
 )
 PROHIBITED_LEAN_TOKENS = re.compile(
@@ -158,7 +160,7 @@ def verify_source_boundary() -> None:
         text = path.read_text(encoding="utf-8")
         observed_theorem_leaves.update(
             declaration.rsplit(".", 1)[-1]
-            for declaration in THEOREM_DECLARATION.findall(text)
+            for declaration in PROOF_DECLARATION.findall(text)
         )
     expected_theorem_leaves = Counter(
         theorem.rsplit(".", 1)[-1]
@@ -166,7 +168,8 @@ def verify_source_boundary() -> None:
     )
     if observed_theorem_leaves != expected_theorem_leaves:
         raise SystemExit(
-            "explicit theorem inventory differs from the complete axiom gate: "
+            "explicit theorem/lemma inventory differs from the complete "
+            "axiom gate: "
             f"expected {sorted(expected_theorem_leaves.elements())}, "
             f"found {sorted(observed_theorem_leaves.elements())}"
         )

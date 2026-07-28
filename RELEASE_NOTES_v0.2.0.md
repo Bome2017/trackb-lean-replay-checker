@@ -1,5 +1,14 @@
 # TrackB v0.2.0 release notes
 
+> **Historical record — superseded for current release use.** These notes
+> describe commit `5a637f8c29d26b79160c6812984cd610ac0d78f6`. A later audit
+> found that its emitted `SAFE_WITHIN_BOUND` artifact was reconstructed after
+> the semantic proof was discarded, and that its axiom gate covered only 28 of
+> 46 explicit theorem declarations. See
+> [RELEASE_NOTES_v0.2.1.md](RELEASE_NOTES_v0.2.1.md) for the successor repair.
+> The historical validation results below are not a validation receipt for
+> v0.2.1.
+
 Status: prepared and locally validated; publish only from the exact validated
 commit.
 
