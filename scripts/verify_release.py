@@ -47,6 +47,10 @@ EXPECTED_AXIOM_THEOREMS = {
     "TrackBReplay.checked_unsafe_endToEnd",
     "TrackBReplay.checked_bounded_safe_endToEnd",
     "TrackBReplay.checked_global_endToEnd",
+    (
+        "TrackBReplay.GuardedExamples."
+        "invalidWorkflow_not_globally_safe"
+    ),
     "TrackBReplay.GuardedExamples.emailFixture_compile",
     "TrackBReplay.GuardedExamples.emailCertificate_check",
     (
@@ -81,6 +85,7 @@ EXPECTED_FIXTURE_SHA256 = {
         "fixtures/guarded/agent_vendor_payment_guarded/workflow.json"
     ): "39a0ebcd1de6ba8ff673a98414b65ee344a22d2089a997e32822f6a673f4f740",
 }
+EXPECTED_TEST_COUNT = 19
 
 
 def run(command: list[str], *, env: dict[str, str] | None = None) -> str:
@@ -189,12 +194,27 @@ def main() -> int:
 
     test_env = dict(os.environ)
     test_env["PYTHONDONTWRITEBYTECODE"] = "1"
-    print(
-        run(
-            ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"],
-            env=test_env,
-        ).strip()
+    test_output = run(
+        ["python3", "-m", "unittest", "discover", "-s", "tests", "-v"],
+        env=test_env,
     )
+    test_counts = re.findall(
+        r"^Ran ([0-9]+) tests? in ",
+        test_output,
+        re.MULTILINE,
+    )
+    if len(test_counts) != 1 or int(test_counts[0]) != EXPECTED_TEST_COUNT:
+        observed = "missing-or-ambiguous" if len(test_counts) != 1 else test_counts[0]
+        raise SystemExit(
+            "release test inventory changed: "
+            f"expected {EXPECTED_TEST_COUNT}, observed {observed}"
+        )
+    if len(re.findall(r"^OK$", test_output, re.MULTILINE)) != 1:
+        raise SystemExit(
+            "release tests must end in exactly one plain OK status "
+            "without skips or expected/unexpected-success qualifications"
+        )
+    print(test_output.strip())
     verify_axioms()
     print("RELEASE_GATE=PASS")
     return 0

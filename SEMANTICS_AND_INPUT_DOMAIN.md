@@ -18,6 +18,9 @@ Validation compiles names and maps into a typed
 condition become vectors of `Option Bool`. After compilation,
 `Kernel.successors` is the sole transition implementation.
 
+The workflow-level global-safety proposition requires an explicit successful
+compilation witness. Compilation failure is not interpreted as global safety.
+
 An enabled action produces exactly one successor. Variables absent from its
 effects persist. Multiple enabled actions may produce the same successor.
 Repeated actions and no-op transitions are allowed.

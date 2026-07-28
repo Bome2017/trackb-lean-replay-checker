@@ -42,7 +42,7 @@ The existing `trackb-replay-check` remains the native `UNSAFE` authority.
 - clean source-only build: PASS;
 - 33 build jobs: PASS;
 - 19 tests: PASS;
-- 27-theorem dependency audit: PASS;
+- 28-theorem dependency audit: PASS;
 - only `propext`, `Classical.choice`, and `Quot.sound`: PASS;
 - guarded fixture hashes and Lean correspondence: 3 of 3 PASS;
 - real optional Z3 SAT and UNSAT-advisory smoke cases: PASS.

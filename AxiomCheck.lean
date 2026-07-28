@@ -23,6 +23,7 @@ import GuardedExamples
 #print axioms TrackBReplay.checked_unsafe_endToEnd
 #print axioms TrackBReplay.checked_bounded_safe_endToEnd
 #print axioms TrackBReplay.checked_global_endToEnd
+#print axioms TrackBReplay.GuardedExamples.invalidWorkflow_not_globally_safe
 #print axioms TrackBReplay.GuardedExamples.emailFixture_compile
 #print axioms TrackBReplay.GuardedExamples.emailCertificate_check
 #print axioms TrackBReplay.GuardedExamples.email_requires_approval_globally_safe

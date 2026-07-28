@@ -19,7 +19,7 @@ current clean-source gate.
 | Registered default targets | PASS: 7 Lean libraries and 4 executables |
 | Clean build | PASS: 33 build jobs |
 | Python end-to-end and negative tests | PASS: 19 of 19 |
-| Exported theorem dependency audit | PASS: 27 theorem checks |
+| Exported theorem dependency audit | PASS: 28 theorem checks |
 | Permitted theorem assumptions | `propext`, `Classical.choice`, `Quot.sound` only |
 | Incomplete/native-shortcut source tokens | PASS: none in release Lean source |
 | Strict guarded fixture hashes | PASS: 3 of 3 |
@@ -40,6 +40,7 @@ The axiom gate covers:
 - native global-result soundness;
 - generated-result checker acceptance;
 - proof-carrying end-to-end `UNSAFE`, bounded-safe, and global-safe packaging;
+- non-vacuity of workflow-level global safety for a malformed workflow;
 - exact compilation and reducible certificate checks for all three guarded
   workflows; and
 - all three concrete global-safety theorems.
@@ -110,7 +111,7 @@ PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify_release.py
 ```
 
 That command performed the full build, 19 tests, guarded-fixture digest and
-correspondence checks, and 27-theorem dependency audit.
+correspondence checks, and 28-theorem dependency audit.
 
 ## Nonclaims
 

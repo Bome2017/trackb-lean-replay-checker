@@ -46,11 +46,17 @@ theorem globallySafe_of_certificate
     {certificate : SafetyCertificate workflow.variables.length}
     (hcompile : workflow.compile = .ok kernel)
     (hcertificate : SafetyCertificate.check kernel certificate = true) :
-    workflow.GloballySafe := by
-  intro checkedKernel hchecked state hreachable
-  rw [hcompile] at hchecked
-  cases hchecked
-  exact SafetyCertificate.check_sound hcertificate state hreachable
+    workflow.GloballySafe :=
+  ⟨kernel, hcompile, SafetyCertificate.check_sound hcertificate⟩
+
+theorem invalidWorkflow_not_globally_safe :
+    ¬invalidWorkflow.GloballySafe := by
+  rintro ⟨kernel, hcompile, _⟩
+  simp [
+    invalidWorkflow,
+    Workflow.compile,
+    Workflow.WellFormed
+  ] at hcompile
 
 def emailWorkflow : Workflow :=
   {

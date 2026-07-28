@@ -72,6 +72,10 @@ finite certificate check verifies:
 2. every supplied state is non-forbidden; and
 3. every enabled successor of every supplied state is also in the set.
 
+The `Workflow.GloballySafe` proposition also contains a witness that the
+workflow compiled successfully. A malformed workflow therefore cannot satisfy
+the proposition merely because there is no compiled kernel to inspect.
+
 Induction on reachability then proves that every reachable state is in that
 set. The relevant results are:
 

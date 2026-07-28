@@ -46,13 +46,13 @@ structure GlobalSafetyResult where
   deriving Repr, DecidableEq
 
 /--
-All-depth safety of a compiled workflow.  The explicit compile equality keeps
-malformed native inputs outside the proposition rather than assigning them a
-default kernel or a safety meaning.
+All-depth safety of a successfully compiled workflow.  The existential compile
+witness keeps malformed native inputs outside the proposition rather than
+making the implication vacuously true when compilation fails.
 -/
 def Workflow.GloballySafe (workflow : Workflow) : Prop :=
-  ∀ (kernel : Kernel workflow.variables.length),
-    workflow.compile = .ok kernel →
+  ∃ kernel : Kernel workflow.variables.length,
+    workflow.compile = .ok kernel ∧
     ∀ state, kernel.Reachable state → ¬kernel.Forbidden state
 
 def GlobalSafetyResult.metadataCheck
@@ -92,19 +92,26 @@ theorem GlobalSafetyResult.check_sound
     {result : GlobalSafetyResult}
     (hcheck : result.check workflow = true) :
     workflow.GloballySafe := by
-  intro kernel hcompile state hreachable
   unfold GlobalSafetyResult.check at hcheck
   simp only [Bool.and_eq_true] at hcheck
   have hsemantic := hcheck.2
   unfold GlobalSafetyResult.semanticCheck at hsemantic
-  rw [hcompile] at hsemantic
-  simp only [Bool.and_eq_true] at hsemantic
-  have hcertificate :
-      SafetyCertificate.check kernel
-        (result.closure.map
-          (BoolMap.toKernelState workflow.variables)) = true := by
-    exact hsemantic.2
-  exact SafetyCertificate.check_sound hcertificate state hreachable
+  cases hcompile : workflow.compile with
+  | error message =>
+      simp [hcompile] at hsemantic
+  | ok kernel =>
+      rw [hcompile] at hsemantic
+      simp only [Bool.and_eq_true] at hsemantic
+      have hcertificate :
+          SafetyCertificate.check kernel
+            (result.closure.map
+              (BoolMap.toKernelState workflow.variables)) = true := by
+        exact hsemantic.2
+      exact ⟨
+        kernel,
+        hcompile,
+        SafetyCertificate.check_sound hcertificate
+      ⟩
 
 def SemanticTrace.toNativeSteps
     (workflow : Workflow) :
