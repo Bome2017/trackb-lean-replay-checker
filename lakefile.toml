@@ -1,9 +1,36 @@
 name = "trackb_lean_replay_checker"
-version = "0.1.0"
-defaultTargets = ["TrackBReplay", "AxiomCheck", "trackb-replay-check"]
+version = "0.2.0"
+defaultTargets = [
+  "TrackBSemantics",
+  "TrackBSafety",
+  "TrackBSearch",
+  "TrackBReplay",
+  "TrackBResults",
+  "GuardedExamples",
+  "AxiomCheck",
+  "trackb-replay-check",
+  "trackb-reachability",
+  "trackb-global-safety-check",
+  "trackb-guarded-fixture-check",
+]
+
+[[lean_lib]]
+name = "TrackBSemantics"
+
+[[lean_lib]]
+name = "TrackBSafety"
+
+[[lean_lib]]
+name = "TrackBSearch"
 
 [[lean_lib]]
 name = "TrackBReplay"
+
+[[lean_lib]]
+name = "TrackBResults"
+
+[[lean_lib]]
+name = "GuardedExamples"
 
 [[lean_lib]]
 name = "AxiomCheck"
@@ -11,3 +38,15 @@ name = "AxiomCheck"
 [[lean_exe]]
 name = "trackb-replay-check"
 root = "Main"
+
+[[lean_exe]]
+name = "trackb-reachability"
+root = "SearchMain"
+
+[[lean_exe]]
+name = "trackb-global-safety-check"
+root = "SafetyMain"
+
+[[lean_exe]]
+name = "trackb-guarded-fixture-check"
+root = "FixtureMain"

@@ -1,0 +1,79 @@
+{
+  "schema_version": "0.1",
+  "name": "agent_email_requires_approval",
+  "bound": 5,
+  "state_variables": {
+    "has_file": "bool",
+    "has_customer_data": "bool",
+    "summary_created": "bool",
+    "approval_requested": "bool",
+    "approval_received": "bool",
+    "emailed_external": "bool",
+    "file_deleted": "bool"
+  },
+  "initial_state": {
+    "has_file": true,
+    "has_customer_data": false,
+    "summary_created": false,
+    "approval_requested": false,
+    "approval_received": false,
+    "emailed_external": false,
+    "file_deleted": false
+  },
+  "actions": [
+    {
+      "name": "access_customer_data",
+      "pre": {
+        "has_file": true,
+        "file_deleted": false
+      },
+      "effects": {
+        "has_customer_data": true
+      }
+    },
+    {
+      "name": "summarize_file",
+      "pre": {
+        "has_customer_data": true
+      },
+      "effects": {
+        "summary_created": true
+      }
+    },
+    {
+      "name": "email_external",
+      "pre": {
+        "summary_created": true,
+        "approval_received": true
+      },
+      "effects": {
+        "emailed_external": true
+      }
+    },
+    {
+      "name": "request_approval",
+      "pre": {
+        "summary_created": true
+      },
+      "effects": {
+        "approval_requested": true
+      }
+    },
+    {
+      "name": "receive_approval",
+      "pre": {
+        "approval_requested": true
+      },
+      "effects": {
+        "approval_received": true
+      }
+    }
+  ],
+  "forbidden": {
+    "all": {
+      "has_customer_data": true,
+      "emailed_external": true,
+      "approval_received": false
+    }
+  }
+}

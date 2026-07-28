@@ -8,29 +8,11 @@ It does not claim that a search backend is complete or that SAFE_WITHIN_BOUND
 is global safety.
 -/
 
-import Lean.Data.Json
+import TrackBSearch
 
 namespace TrackBReplay
 
 open Lean
-
-abbrev BoolMap := List (String × Bool)
-
-structure Action where
-  name : String
-  pre : BoolMap
-  effects : BoolMap
-  deriving Repr, DecidableEq
-
-structure Workflow where
-  schemaVersion : String
-  name : String
-  bound : Nat
-  variables : List String
-  initialState : BoolMap
-  actions : List Action
-  forbidden : BoolMap
-  deriving Repr, DecidableEq
 
 structure TraceStep where
   step : Nat
@@ -59,63 +41,43 @@ def unsafeClaimBoundary : String :=
   "UNSAFE means a bad replay exists within the configured bound and model assumptions. " ++
   "SAFE_WITHIN_BOUND does not prove global safety."
 
-def BoolMap.keys (m : BoolMap) : List String :=
-  m.map Prod.fst
-
-def BoolMap.lookup (m : BoolMap) (key : String) : Option Bool :=
-  match m.find? (fun entry => entry.1 == key) with
-  | some entry => some entry.2
-  | none => none
-
-def BoolMap.keysWithin (variables : List String) (m : BoolMap) : Bool :=
-  m.all (fun entry => variables.contains entry.1)
-
-def BoolMap.holds (state condition : BoolMap) : Bool :=
-  condition.all (fun entry => state.lookup entry.1 == some entry.2)
-
-def BoolMap.applyEffects (state effects : BoolMap) : BoolMap :=
-  state.map fun entry =>
-    match effects.lookup entry.1 with
-    | some value => (entry.1, value)
-    | none => entry
-
 def BoolMap.delta (before after : BoolMap) : BoolMap :=
   before.filterMap fun entry =>
     match after.lookup entry.1 with
     | some value => if value == entry.2 then none else some (entry.1, value)
     | none => none
 
-def Action.WellFormed (variables : List String) (action : Action) : Bool :=
-  action.name != "" &&
-  decide action.pre.keys.Nodup &&
-  decide action.effects.keys.Nodup &&
-  action.pre.keysWithin variables &&
-  action.effects.keysWithin variables
+/--
+Legacy public map observation retained for downstream v0.1 correspondence
+packages.  Authoritative v0.2 checking compiles observations into
+`KernelCondition` and does not use this adapter as a second semantics kernel.
+-/
+def BoolMap.holds (state condition : BoolMap) : Bool :=
+  condition.all (fun entry => state.lookup entry.1 == some entry.2)
 
-def Workflow.WellFormed (workflow : Workflow) : Bool :=
-  workflow.schemaVersion == "0.1" &&
-  workflow.name != "" &&
-  decide workflow.variables.Nodup &&
-  workflow.variables.all (fun varName => varName != "") &&
-  workflow.initialState.keys == workflow.variables &&
-  decide workflow.initialState.keys.Nodup &&
-  decide (workflow.actions.map Action.name).Nodup &&
-  workflow.actions.all (Action.WellFormed workflow.variables) &&
-  decide workflow.forbidden.keys.Nodup &&
-  workflow.forbidden.keysWithin workflow.variables
+/-- Legacy public map update retained for source compatibility. -/
+def BoolMap.applyEffects (state effects : BoolMap) : BoolMap :=
+  state.map fun entry =>
+    match effects.lookup entry.1 with
+    | some value => (entry.1, value)
+    | none => entry
 
-def State.WellFormed (workflow : Workflow) (state : BoolMap) : Bool :=
-  state.keys == workflow.variables && decide state.keys.Nodup
-
+/--
+Public v0.1 transition name, now a thin adapter into the sole indexed kernel
+successor relation.
+-/
 def Transition
     (workflow : Workflow)
     (before : BoolMap)
     (actionName : String)
     (after : BoolMap) : Bool :=
-  workflow.actions.any fun action =>
-    action.name == actionName &&
-    before.holds action.pre &&
-    after == before.applyEffects action.effects
+  match workflow.compile with
+  | .error _ => false
+  | .ok kernel =>
+      kernel.transitionB
+        (before.toKernelState workflow.variables)
+        actionName
+        (after.toKernelState workflow.variables)
 
 def TraceStep.IsInitial (workflow : Workflow) (traceStep : TraceStep) : Bool :=
   traceStep.step == 0 &&
@@ -135,7 +97,8 @@ def TraceStep.IsTransition
   traceStep.stateDelta == before.delta traceStep.stateAfter &&
   match traceStep.action with
   | none => false
-  | some actionName => Transition workflow before actionName traceStep.stateAfter
+  | some actionName =>
+      Transition workflow before actionName traceStep.stateAfter
 
 def TraceTail.Valid
     (workflow : Workflow) : Nat → BoolMap → List TraceStep → Bool
@@ -148,8 +111,20 @@ def Trace.finalState? (trace : List TraceStep) : Option BoolMap :=
   trace.getLast?.map TraceStep.stateAfter
 
 def Trace.priorStatesSafe (workflow : Workflow) (trace : List TraceStep) : Bool :=
-  trace.dropLast.all fun traceStep =>
-    !BoolMap.holds traceStep.stateAfter workflow.forbidden
+  match workflow.compile with
+  | .error _ => false
+  | .ok kernel =>
+      trace.dropLast.all fun traceStep =>
+        !kernel.forbiddenHolds
+          (traceStep.stateAfter.toKernelState workflow.variables)
+
+def Workflow.forbiddenHoldsState
+    (workflow : Workflow)
+    (state : BoolMap) : Bool :=
+  match workflow.compile with
+  | .error _ => false
+  | .ok kernel =>
+      kernel.forbiddenHolds (state.toKernelState workflow.variables)
 
 /-- Executable Boolean validation of the bounded replay obligations. -/
 def check (workflow : Workflow) (result : UnsafeResult) : Bool :=
@@ -172,7 +147,7 @@ def check (workflow : Workflow) (result : UnsafeResult) : Bool :=
       Trace.priorStatesSafe workflow result.trace &&
       match Trace.finalState? result.trace with
       | none => false
-      | some finalState => BoolMap.holds finalState workflow.forbidden
+      | some finalState => workflow.forbiddenHoldsState finalState
 
 /--
 The proposition checked by the executable.
@@ -202,7 +177,7 @@ def ValidCounterexample (workflow : Workflow) (result : UnsafeResult) : Prop :=
       Trace.priorStatesSafe workflow result.trace = true ∧
       match Trace.finalState? result.trace with
       | none => False
-      | some finalState => BoolMap.holds finalState workflow.forbidden = true
+      | some finalState => workflow.forbiddenHoldsState finalState = true
 
 theorem check_iff {workflow : Workflow} {result : UnsafeResult} :
     check workflow result = true ↔ ValidCounterexample workflow result := by
@@ -223,12 +198,23 @@ theorem check_complete {workflow : Workflow} {result : UnsafeResult}
     check workflow result = true :=
   check_iff.mpr h
 
-private def parseBoolMap (label : String) (json : Json) : Except String BoolMap := do
+def parseBoolMap (label : String) (json : Json) : Except String BoolMap := do
   let object ← json.getObj?
   object.foldlM (init := []) fun entries key value => do
     let boolValue ← value.getBool?
       |>.mapError (fun error => s!"{label}.{key}: {error}")
     return entries ++ [(key, boolValue)]
+
+def requireExactObjectKeys
+    (label : String)
+    (expected : List String)
+    (json : Json) : Except String Unit := do
+  let object ← json.getObj?
+  let actual :=
+    object.foldl (init := []) fun keys key _ => keys ++ [key]
+  if actual.length != expected.length ||
+      !(expected.all fun key => actual.contains key) then
+    throw s!"{label}: expected exactly keys [{String.intercalate ", " expected}]"
 
 private def parseVariables (json : Json) : Except String (List String) := do
   let object ← json.getObj?
@@ -240,6 +226,8 @@ private def parseVariables (json : Json) : Except String (List String) := do
     return variables ++ [key]
 
 private def parseAction (json : Json) : Except String Action := do
+  requireExactObjectKeys
+    "action" ["name", "pre", "effects"] json
   return {
     name := ← (json.getObjVal? "name" >>= Json.getStr?)
     pre := ← parseBoolMap "action.pre" (← json.getObjVal? "pre")
@@ -247,6 +235,10 @@ private def parseAction (json : Json) : Except String Action := do
   }
 
 private def parseTraceStep (json : Json) : Except String TraceStep := do
+  requireExactObjectKeys
+    "trace step"
+    ["step", "action", "state_before", "state_delta", "state_after"]
+    json
   let actionJson ← json.getObjVal? "action"
   let action ←
     if actionJson.isNull then
@@ -268,7 +260,21 @@ private def parseTraceStep (json : Json) : Except String TraceStep := do
   }
 
 def parseWorkflow (json : Json) : Except String Workflow := do
+  requireExactObjectKeys
+    "workflow"
+    [
+      "schema_version",
+      "name",
+      "bound",
+      "state_variables",
+      "initial_state",
+      "actions",
+      "forbidden"
+    ]
+    json
   let actionJson ← json.getObjVal? "actions" >>= Json.getArr?
+  let forbiddenJson ← json.getObjVal? "forbidden"
+  requireExactObjectKeys "forbidden" ["all"] forbiddenJson
   return {
     schemaVersion := ← (json.getObjVal? "schema_version" >>= Json.getStr?)
     name := ← (json.getObjVal? "name" >>= Json.getStr?)
@@ -277,13 +283,27 @@ def parseWorkflow (json : Json) : Except String Workflow := do
     initialState := ← parseBoolMap "initial_state" (← json.getObjVal? "initial_state")
     actions := ← actionJson.toList.mapM parseAction
     forbidden := ← parseBoolMap "forbidden.all"
-      (← json.getObjVal? "forbidden" >>= (·.getObjVal? "all"))
+      (← forbiddenJson.getObjVal? "all")
   }
 
 def parseUnsafeResult (json : Json) : Except String UnsafeResult := do
+  requireExactObjectKeys
+    "UNSAFE result"
+    [
+      "workflow",
+      "schema_version",
+      "bound",
+      "status",
+      "violation",
+      "trace",
+      "claim_boundary"
+    ]
+    json
   let violationJson ← json.getObjVal? "violation"
   if violationJson.isNull then
     throw "violation must be an object; SAFE_WITHIN_BOUND is outside this checker"
+  requireExactObjectKeys
+    "violation" ["condition", "first_bad_step"] violationJson
   let traceJson ← json.getObjVal? "trace"
   if traceJson.isNull then
     throw "trace must be an array; SAFE_WITHIN_BOUND is outside this checker"

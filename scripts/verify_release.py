@@ -5,6 +5,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import os
 import re
@@ -14,14 +15,72 @@ from pathlib import Path
 
 
 ROOT = Path(__file__).resolve().parents[1]
-EXPECTED_MODULES = {"TrackBReplay.lean", "AxiomCheck.lean", "Main.lean"}
+EXPECTED_MODULES = {
+    "AxiomCheck.lean",
+    "FixtureMain.lean",
+    "GuardedExamples.lean",
+    "Main.lean",
+    "SafetyMain.lean",
+    "SearchMain.lean",
+    "TrackBReplay.lean",
+    "TrackBResults.lean",
+    "TrackBSafety.lean",
+    "TrackBSearch.lean",
+    "TrackBSemantics.lean",
+}
 EXPECTED_AXIOM_THEOREMS = {
     "TrackBReplay.check_iff",
     "TrackBReplay.check_sound",
     "TrackBReplay.check_complete",
+    "TrackBReplay.Kernel.transitionB_iff",
+    "TrackBReplay.SafetyCertificate.check_sound",
+    "TrackBReplay.Kernel.mem_stateLayer_iff",
+    "TrackBReplay.findBoundedCounterexample?_sound",
+    "TrackBReplay.findBoundedCounterexample?_complete",
+    "TrackBReplay.reachabilityEngine_unsafe_sound",
+    "TrackBReplay.reachabilityEngine_bounded_complete",
+    "TrackBReplay.reachabilityEngine_safeWithinBound_sound",
+    "TrackBReplay.reachabilityEngine_globallySafe_sound",
+    "TrackBReplay.GlobalSafetyResult.check_sound",
+    "TrackBReplay.generated_result_passes_checker",
+    "TrackBReplay.generated_global_result_is_globally_safe",
+    "TrackBReplay.checked_unsafe_endToEnd",
+    "TrackBReplay.checked_bounded_safe_endToEnd",
+    "TrackBReplay.checked_global_endToEnd",
+    "TrackBReplay.GuardedExamples.emailFixture_compile",
+    "TrackBReplay.GuardedExamples.emailCertificate_check",
+    (
+        "TrackBReplay.GuardedExamples."
+        "email_requires_approval_globally_safe"
+    ),
+    "TrackBReplay.GuardedExamples.deleteFixture_compile",
+    "TrackBReplay.GuardedExamples.deleteCertificate_check",
+    (
+        "TrackBReplay.GuardedExamples."
+        "delete_requires_confirmation_globally_safe"
+    ),
+    "TrackBReplay.GuardedExamples.vendorPaymentFixture_compile",
+    "TrackBReplay.GuardedExamples.vendorPaymentCertificate_check",
+    (
+        "TrackBReplay.GuardedExamples."
+        "vendor_payment_guarded_globally_safe"
+    ),
 }
 ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
-PROHIBITED_LEAN_TOKENS = re.compile(r"\b(sorry|admit|axiom|unsafe)\b")
+PROHIBITED_LEAN_TOKENS = re.compile(
+    r"\b(sorry|admit|axiom|unsafe|native_decide)\b"
+)
+EXPECTED_FIXTURE_SHA256 = {
+    (
+        "fixtures/guarded/agent_email_requires_approval/workflow.json"
+    ): "88fc0c4eb52487cf00a8dda32fb9dc14473b44ab694919ca82cbdf50097dabf9",
+    (
+        "fixtures/guarded/agent_delete_requires_confirmation/workflow.json"
+    ): "2c1adc8dfaac1ae2b16bf53115305024bdcee9b2ed9900927c4f557fa0836acd",
+    (
+        "fixtures/guarded/agent_vendor_payment_guarded/workflow.json"
+    ): "39a0ebcd1de6ba8ff673a98414b65ee344a22d2089a997e32822f6a673f4f740",
+}
 
 
 def run(command: list[str], *, env: dict[str, str] | None = None) -> str:
@@ -62,6 +121,10 @@ def verify_source_boundary() -> None:
     if manifest.get("packages") != []:
         raise SystemExit("unexpected Lake dependency; update third-party review first")
 
+    lakefile = (ROOT / "lakefile.toml").read_text(encoding="utf-8")
+    if 'version = "0.2.0"' not in lakefile:
+        raise SystemExit("Lake package version is not frozen at 0.2.0")
+
     for path in ROOT.glob("*.lean"):
         text = path.read_text(encoding="utf-8")
         match = PROHIBITED_LEAN_TOKENS.search(text)
@@ -69,6 +132,27 @@ def verify_source_boundary() -> None:
             line = text.count("\n", 0, match.start()) + 1
             raise SystemExit(
                 f"prohibited Lean token {match.group(1)!r} in {path.name}:{line}"
+            )
+
+    for relative, expected in EXPECTED_FIXTURE_SHA256.items():
+        path = ROOT / relative
+        if not path.is_file():
+            raise SystemExit(f"required guarded fixture is missing: {relative}")
+        observed = hashlib.sha256(path.read_bytes()).hexdigest()
+        if observed != expected:
+            raise SystemExit(
+                f"guarded fixture digest mismatch for {relative}: "
+                f"expected {expected}, found {observed}"
+            )
+
+
+def verify_guarded_fixture_correspondence() -> None:
+    checker = ROOT / ".lake" / "build" / "bin" / "trackb-guarded-fixture-check"
+    for relative in EXPECTED_FIXTURE_SHA256:
+        output = run([str(checker), str(ROOT / relative)])
+        if "model=exact" not in output:
+            raise SystemExit(
+                f"guarded fixture correspondence marker missing: {relative}"
             )
 
 
@@ -101,6 +185,7 @@ def verify_axioms() -> None:
 def main() -> int:
     verify_source_boundary()
     print(run(["lake", "build"]).strip())
+    verify_guarded_fixture_correspondence()
 
     test_env = dict(os.environ)
     test_env["PYTHONDONTWRITEBYTECODE"] = "1"

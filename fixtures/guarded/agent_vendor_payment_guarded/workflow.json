@@ -1,0 +1,80 @@
+{
+  "schema_version": "0.1",
+  "name": "agent_vendor_payment_guarded",
+  "bound": 8,
+  "state_variables": {
+    "invoice_received": "bool",
+    "invoice_read": "bool",
+    "vendor_record_accessed": "bool",
+    "payment_system_accessed": "bool",
+    "vendor_verified": "bool",
+    "wire_prepared": "bool",
+    "compliance_review_passed": "bool",
+    "manager_approved": "bool",
+    "wire_sent": "bool"
+  },
+  "initial_state": {
+    "invoice_received": true,
+    "invoice_read": false,
+    "vendor_record_accessed": false,
+    "payment_system_accessed": false,
+    "vendor_verified": false,
+    "wire_prepared": false,
+    "compliance_review_passed": false,
+    "manager_approved": false,
+    "wire_sent": false
+  },
+  "actions": [
+    {
+      "name": "read_invoice",
+      "pre": {"invoice_received": true},
+      "effects": {"invoice_read": true}
+    },
+    {
+      "name": "access_vendor_record",
+      "pre": {"invoice_read": true},
+      "effects": {"vendor_record_accessed": true}
+    },
+    {
+      "name": "access_payment_system",
+      "pre": {"invoice_read": true},
+      "effects": {"payment_system_accessed": true}
+    },
+    {
+      "name": "verify_vendor",
+      "pre": {"vendor_record_accessed": true},
+      "effects": {"vendor_verified": true}
+    },
+    {
+      "name": "prepare_wire",
+      "pre": {"vendor_record_accessed": true, "payment_system_accessed": true},
+      "effects": {"wire_prepared": true}
+    },
+    {
+      "name": "compliance_review",
+      "pre": {"wire_prepared": true},
+      "effects": {"compliance_review_passed": true}
+    },
+    {
+      "name": "manager_approve",
+      "pre": {"wire_prepared": true},
+      "effects": {"manager_approved": true}
+    },
+    {
+      "name": "send_wire",
+      "pre": {
+        "wire_prepared": true,
+        "vendor_verified": true,
+        "compliance_review_passed": true,
+        "manager_approved": true
+      },
+      "effects": {"wire_sent": true}
+    }
+  ],
+  "forbidden": {
+    "all": {
+      "wire_sent": true,
+      "vendor_verified": false
+    }
+  }
+}

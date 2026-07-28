@@ -14,8 +14,9 @@ license.
 
 ## Clean release boundary
 
-This package is a new, narrow implementation of a TrackB v0.1 concrete
-counterexample checker. It does not vendor:
+This package is a new, narrow implementation of the TrackB v0.2 shared
+semantics, replay, bounded-search, and finite-certificate kernel. It does not
+vendor:
 
 - historical `.lake` build output or package caches;
 - the absolute package symlinks found in archival Lean trees;
@@ -24,8 +25,10 @@ counterexample checker. It does not vendor:
 - Python code from the archived TrackB verifier.
 
 The runtime schema and examples informed the interface and acceptance tests.
-The Lean checker and Python SHA-256 receipt wrapper in this package were written
-for this release.
+Three guarded workflow fixtures are included byte-for-byte from the author's
+archive and are covered by his authorization. The Lean implementation, Python
+SHA-256 receipt wrapper, and optional fail-closed Z3 proposal adapter in this
+package were written for this release.
 
 ## Reviewed source snapshot
 

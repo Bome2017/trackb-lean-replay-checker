@@ -1,44 +1,164 @@
 # Claim boundaries
 
-## What a PASS means
+## Shared semantics boundary
 
-A `PASS` means the exact parsed TrackB v0.1 workflow/result pair contains a
-well-formed concrete trace such that:
+TrackB v0.2 has one operational semantics:
+`TrackBReplay.Kernel.successors`. The replay checker, bounded reachability
+engine, trace reconstruction, and finite-closure checker all use that kernel.
+Malformed external workflows fail during validation or compilation; they are
+not assigned a safety meaning.
 
-- the workflow and result identifiers, schema version, bound, and forbidden
-  condition agree;
-- step 0 exactly matches the workflow's initial state;
-- every later step names a declared action whose preconditions hold;
-- each next state is exactly the prior state with that action's effects applied,
-  including persistence of variables without effects;
+The external JSON schema version is `0.1`. The Lean package implementing the
+shared kernel is version `0.2.0`.
+
+## Native replay `PASS`
+
+A `PASS` from `trackb-replay-check` means the exact parsed workflow/result pair
+contains a well-formed concrete first-bad trace such that:
+
+- workflow/result identity, schema version, bound, and forbidden condition
+  agree;
+- step 0 is the exact initial state;
+- every later step is a transition of the shared kernel;
 - each reported state delta is exact;
-- trace steps are sequential and the action count is at most the workflow
-  bound;
-- no earlier trace state is forbidden; and
-- the final trace state satisfies the forbidden predicate.
+- action count is at most the workflow bound;
+- every earlier state is non-forbidden; and
+- the final state is forbidden.
 
-`TrackBReplay.check_sound` proves in Lean that an executable `true` result
-entails the proposition `TrackBReplay.ValidCounterexample`.
+`TrackBReplay.check_sound` proves that executable acceptance entails
+`TrackBReplay.ValidCounterexample`.
 
-## What a PASS does not mean
+The authoritative search executable uses a proof-carrying pure result. For an
+emitted counterexample, `TrackBReplay.checked_unsafe_endToEnd` binds one exact
+semantic `BoundedCounterexample`, its definitionally generated native result,
+and ordinary replay-checker acceptance.
 
-A `PASS` does not prove:
+## Bounded search completeness
 
-- global safety or unsafety beyond the supplied bounded model;
-- `SAFE_WITHIN_BOUND`;
-- completeness, optimality, or first-found behavior of the Python BFS or Z3
-  backend;
-- equivalence between arbitrary Action Gate inputs and TrackB workflows;
-- correctness of the Lean JSON parser, compiler, code generator, runtime, OS,
-  or SHA-256 wrapper;
-- production certification; or
+The proved completeness statement is relational and bounded:
+
+> If there exists a `TrackBReplay.BoundedCounterexample` whose action count is
+> at most `bound` in the exact compiled kernel, then
+> `TrackBReplay.reachabilityEngine` returns some `unsafeFound` trace satisfying
+> that proposition.
+
+The proof is `TrackBReplay.reachabilityEngine_bounded_complete`. Exact-depth
+state layers are proved equivalent to `Kernel.ReachableAt`; action-path
+enumeration runs only after a bad reachable state is found so a native trace
+can be reconstructed.
+
+This is not completeness of retrieval, modeling, natural-language
+understanding, real-world observation, or any workflow outside the frozen
+Boolean schema.
+
+## `SAFE_WITHIN_BOUND`
+
+`SAFE_WITHIN_BOUND` means no semantic first-bad trace exists with action count
+at or below the configured bound. The theorem is
+`TrackBReplay.reachabilityEngine_safeWithinBound_sound`; the proof-carrying
+executable boundary is `TrackBReplay.checked_bounded_safe_endToEnd`.
+
+It does not mean all-depth safety. A regression test uses a workflow that is
+safe at bound 0 but reaches a forbidden state at step 1, and verifies that the
+engine returns only `SAFE_WITHIN_BOUND`.
+
+## `GLOBALLY_SAFE`
+
+`GLOBALLY_SAFE` means every state reachable at any finite depth under the exact
+closed TrackB kernel is non-forbidden. It is emitted only if an independent
+finite certificate check verifies:
+
+1. the initial state is in the supplied set;
+2. every supplied state is non-forbidden; and
+3. every enabled successor of every supplied state is also in the set.
+
+Induction on reachability then proves that every reachable state is in that
+set. The relevant results are:
+
+- `TrackBReplay.SafetyCertificate.check_sound`;
+- `TrackBReplay.reachabilityEngine_globallySafe_sound`; and
+- `TrackBReplay.GlobalSafetyResult.check_sound`.
+
+`TrackBReplay.checked_global_endToEnd` additionally binds the emitted native
+global result to the exact closure that generated it, its checker acceptance,
+and the `Workflow.GloballySafe` proposition.
+
+This is an all-depth theorem about the exact declared finite transition model.
+It is not universal filesystem safety, external-system safety, objective truth,
+or proof that the model includes every runtime behavior.
+
+## Concrete guarded workflows
+
+Lean proves the following exact typed workflows globally safe:
+
+- `email_requires_approval_globally_safe`;
+- `delete_requires_confirmation_globally_safe`; and
+- `vendor_payment_guarded_globally_safe`.
+
+Their finite certificates contain 6, 5, and 16 states respectively. The
+concrete checks reduce in the Lean kernel. Separately,
+`trackb-guarded-fixture-check` confirms that each checked-in JSON file parses to
+the exact typed workflow used by its theorem, and the release gate fixes each
+file by SHA-256.
+
+These results prove the modeled guard properties only. They do not authenticate
+approval, confirmation, vendor identity, reviewer identity, external service
+behavior, or filesystem effects.
+
+## Optional Z3 boundary
+
+The Z3 module is outside the theorem-backed search authority. It may propose a
+native `UNSAFE` witness, but:
+
+- SAT has no authority until the exact pair passes Lean replay;
+- UNSAT is only `no_candidate_advisory`;
+- unknown, error, and timeout are explicit nonzero outcomes; and
+- no solver response becomes `SAFE` or `GLOBALLY_SAFE`.
+
+The authoritative bounded-safe and global-safe decisions come from the Lean
+reachability engine and certificate checker, not Z3.
+
+## ReplayGuard and Evidence-to-Action
+
+This repository does not prove ReplayGuard or Evidence-to-Action correct. It
+does not yet establish:
+
+- ReplayGuard schema-1.1 certificate validity;
+- recomputation of ReplayGuard evaluations inside Evidence-to-Action;
+- exact certificate-to-route authorization binding;
+- Python-to-Lean correspondence for those projects; or
+- global safety of their host-language or filesystem behavior.
+
+The frozen downstream design requires a versioned ReplayGuard certificate
+checker and an Evidence-to-Action `VerifiedAssurance` value derived from the
+exact passing certificate. Producer-supplied `PASS` and digest fields are not
+enough.
+
+## Trusted computing base
+
+The theorems cover pure Lean structures and functions after parsing. The
+following remain trusted:
+
+- the Lean parser, elaborator, kernel, compiler, code generator, and runtime;
+- operating-system I/O and process execution;
+- the exact toolchain identified by `lean-toolchain`;
+- SHA-256 implementations used by release/receipt tooling; and
+- the user's assertion of authorship and authorization for the included work.
+
+The parser-to-concrete-model boundary is checked by a Lean executable rather
+than a Python semantic translator. No claim is made that the JSON parser itself
+has been formally verified.
+
+## Explicit nonclaims
+
+TrackB v0.2 does not prove:
+
+- completeness or truth of a workflow model;
+- complete retrieval or evidence collection;
+- model understanding or agent intent;
+- authenticated human identity or authorization outside modeled Boolean bits;
+- hostile-kernel, compiler, OS, or hardware resistance;
+- universal or production filesystem safety;
+- production certification;
+- ReplayGuard/Evidence-to-Action cross-project correctness; or
 - any SAT, complexity-class, RCV, or P-versus-NP claim.
-
-## Trusted boundary
-
-The proof covers the pure Lean structures produced by parsing and the checker
-defined over those structures. The Lean JSON parser, compiler/kernel/code
-generator/runtime, operating-system I/O, and Python digest wrapper remain in the
-trusted computing base. The Python wrapper does not translate workflow
-semantics: it copies exact input bytes, launches the Lean executable, and hashes
-the same bytes for the receipt.

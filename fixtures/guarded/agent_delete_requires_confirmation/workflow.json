@@ -1,0 +1,66 @@
+{
+  "schema_version": "0.1",
+  "name": "agent_delete_requires_confirmation",
+  "bound": 4,
+  "state_variables": {
+    "file_exists": "bool",
+    "file_selected": "bool",
+    "confirmation_requested": "bool",
+    "confirmation_received": "bool",
+    "file_deleted": "bool"
+  },
+  "initial_state": {
+    "file_exists": true,
+    "file_selected": false,
+    "confirmation_requested": false,
+    "confirmation_received": false,
+    "file_deleted": false
+  },
+  "actions": [
+    {
+      "name": "select_file",
+      "pre": {
+        "file_exists": true,
+        "file_deleted": false
+      },
+      "effects": {
+        "file_selected": true
+      }
+    },
+    {
+      "name": "delete_file",
+      "pre": {
+        "file_selected": true,
+        "confirmation_received": true
+      },
+      "effects": {
+        "file_exists": false,
+        "file_deleted": true
+      }
+    },
+    {
+      "name": "request_confirmation",
+      "pre": {
+        "file_selected": true
+      },
+      "effects": {
+        "confirmation_requested": true
+      }
+    },
+    {
+      "name": "receive_confirmation",
+      "pre": {
+        "confirmation_requested": true
+      },
+      "effects": {
+        "confirmation_received": true
+      }
+    }
+  ],
+  "forbidden": {
+    "all": {
+      "file_deleted": true,
+      "confirmation_received": false
+    }
+  }
+}
