@@ -28,9 +28,8 @@ private def runSearch (workflow : Workflow) : IO UInt32 := do
       | .counterexample _ _ generated =>
           emitJson (unsafeResultToJson generated.result)
           return 0
-      | .safeWithinBound visited frontier _ =>
-          emitJson <| boundedSafetyResultToJson <|
-            makeBoundedSafetyResult workflow visited frontier
+      | .safeWithinBound generated =>
+          emitJson <| boundedSafetyResultToJson generated.result
           return 0
       | .globallySafe _ _ generated =>
           emitJson (globalSafetyResultToJson generated.result)

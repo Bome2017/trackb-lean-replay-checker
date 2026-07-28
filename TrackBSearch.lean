@@ -104,7 +104,6 @@ def BoundedCounterexample
     (kernel : Kernel arity)
     (bound : Nat)
     (trace : SemanticTrace arity) : Prop :=
-  trace.states ≠ [] ∧
   trace.Valid kernel ∧
   trace.actionCount ≤ bound ∧
   trace.PriorSafe kernel ∧
@@ -114,7 +113,6 @@ def boundedCounterexampleB
     (kernel : Kernel arity)
     (bound : Nat)
     (trace : SemanticTrace arity) : Bool :=
-  decide (trace.states ≠ []) &&
   trace.validB kernel &&
   decide (trace.actionCount ≤ bound) &&
   trace.priorSafeB kernel &&
@@ -254,11 +252,11 @@ theorem findBadState?_none_no_boundedCounterexample
   rcases hexists with ⟨trace, hcounterexample⟩
   have hcovered : trace.finalState ∈ kernel.coveredStates bound :=
     kernel.mem_coveredStates_of_reachableAt
-      hcounterexample.2.2.1
-      hcounterexample.2.1.reachableAt
+      hcounterexample.2.1
+      hcounterexample.1.reachableAt
   have hnoneAll :=
     List.find?_eq_none.mp hnone trace.finalState hcovered
-  exact hnoneAll hcounterexample.2.2.2.2
+  exact hnoneAll hcounterexample.2.2.2
 
 theorem SemanticTrace.valid_mem_traceLayer
     {kernel : Kernel arity}
@@ -319,7 +317,7 @@ theorem findBoundedCounterexample?_complete
       BoundedCounterexample kernel bound found := by
   rcases hexists with ⟨trace, hcounterexample⟩
   have hmember := trace.valid_mem_tracesUpTo
-    hcounterexample.2.1 hcounterexample.2.2.1
+    hcounterexample.1 hcounterexample.2.1
   have hpredicate : boundedCounterexampleB kernel bound trace = true :=
     boundedCounterexampleB_iff.mpr hcounterexample
   have hisSome : (findBoundedCounterexample? kernel bound).isSome = true := by
@@ -423,11 +421,11 @@ theorem reachabilityEngine_bounded_complete
   rcases hexists with ⟨witness, hwitness⟩
   have hcovered : witness.finalState ∈ kernel.coveredStates bound :=
     kernel.mem_coveredStates_of_reachableAt
-      hwitness.2.2.1
-      hwitness.2.1.reachableAt
+      hwitness.2.1
+      hwitness.1.reachableAt
   have hbadSome : (findBadState? kernel bound).isSome = true := by
     apply List.find?_isSome.mpr
-    exact ⟨witness.finalState, hcovered, hwitness.2.2.2.2⟩
+    exact ⟨witness.finalState, hcovered, hwitness.2.2.2⟩
   cases hbad : findBadState? kernel bound with
   | none =>
       simp [hbad] at hbadSome

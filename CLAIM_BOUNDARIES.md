@@ -9,7 +9,7 @@ Malformed external workflows fail during validation or compilation; they are
 not assigned a safety meaning.
 
 The external JSON schema version is `0.1`. The Lean package implementing the
-shared kernel is version `0.2.0`.
+shared kernel is version `0.2.1`.
 
 ## Native replay `PASS`
 
@@ -56,7 +56,11 @@ Boolean schema.
 `SAFE_WITHIN_BOUND` means no semantic first-bad trace exists with action count
 at or below the configured bound. The theorem is
 `TrackBReplay.reachabilityEngine_safeWithinBound_sound`; the proof-carrying
-executable boundary is `TrackBReplay.checked_bounded_safe_endToEnd`.
+executable boundary is `TrackBReplay.checked_bounded_safe_endToEnd`. Its exact
+`BoundedSafetyResult` is carried in `CheckedGeneratedBoundedSafety` together
+with the engine-outcome equality, generated-result equality, and semantic
+no-counterexample proof. The executable emits that carried result rather than
+reconstructing another artifact.
 
 It does not mean all-depth safety. A regression test uses a workflow that is
 safe at bound 0 but reaches a forbidden state at step 1, and verifies that the
@@ -124,19 +128,21 @@ reachability engine and certificate checker, not Z3.
 
 ## ReplayGuard and Evidence-to-Action
 
-This repository does not prove ReplayGuard or Evidence-to-Action correct. It
-does not yet establish:
+This repository contains no Lean semantics or proofs for ReplayGuard or
+Evidence-to-Action and does not establish:
 
 - ReplayGuard schema-1.1 certificate validity;
-- recomputation of ReplayGuard evaluations inside Evidence-to-Action;
-- exact certificate-to-route authorization binding;
+- correctness of ReplayGuard evaluation recomputation performed by a separate
+  Evidence-to-Action runtime;
+- correctness of a separate runtime's exact certificate-to-route authorization
+  binding;
 - Python-to-Lean correspondence for those projects; or
 - global safety of their host-language or filesystem behavior.
 
-The frozen downstream design requires a versioned ReplayGuard certificate
-checker and an Evidence-to-Action `VerifiedAssurance` value derived from the
-exact passing certificate. Producer-supplied `PASS` and digest fields are not
-enough.
+Separate ReplayGuard/Evidence-to-Action releases may implement and test those
+runtime contracts, but they remain outside this TrackB theorem boundary. The
+design document in this repository is future formalization work, not an
+implemented TrackB layer.
 
 ## Trusted computing base
 
@@ -155,7 +161,7 @@ has been formally verified.
 
 ## Explicit nonclaims
 
-TrackB v0.2 does not prove:
+TrackB v0.2.1 does not prove:
 
 - completeness or truth of a workflow model;
 - complete retrieval or evidence collection;

@@ -11,6 +11,7 @@ import os
 import re
 import subprocess
 import sys
+from collections import Counter
 from pathlib import Path
 
 
@@ -29,24 +30,40 @@ EXPECTED_MODULES = {
     "TrackBSemantics.lean",
 }
 EXPECTED_AXIOM_THEOREMS = {
+    "TrackBReplay.KernelState.toBoolMap_keys",
+    "TrackBReplay.KernelState.toKernelState_toBoolMap",
+    "TrackBReplay.Kernel.transitionB_iff",
+    "TrackBReplay.SafetyCertificate.check_iff",
+    "TrackBReplay.SafetyCertificate.check_sound",
+    "TrackBReplay.SemanticTrace.validB_iff",
+    "TrackBReplay.SemanticTrace.states_ne_nil",
+    "TrackBReplay.SemanticTrace.priorSafeB_iff",
+    "TrackBReplay.boundedCounterexampleB_iff",
+    "TrackBReplay.Kernel.mem_stateLayer_iff",
+    "TrackBReplay.SemanticTrace.Valid.reachableAt",
+    "TrackBReplay.Kernel.stateLayer_mem_stateLayers_of_le",
+    "TrackBReplay.Kernel.mem_coveredStates_of_reachableAt",
+    "TrackBReplay.findBadState?_none_no_boundedCounterexample",
+    "TrackBReplay.SemanticTrace.valid_mem_traceLayer",
+    "TrackBReplay.SemanticTrace.valid_mem_tracesUpTo",
+    "TrackBReplay.findBoundedCounterexample?_sound",
+    "TrackBReplay.findBoundedCounterexample?_complete",
+    "TrackBReplay.findBoundedCounterexample?_none_iff",
+    "TrackBReplay.reachabilityEngine_unsafe_sound",
+    "TrackBReplay.reachabilityEngine_bounded_complete",
+    "TrackBReplay.reachabilityEngine_not_unsafe_complete",
+    "TrackBReplay.reachabilityEngine_safeWithinBound_sound",
+    "TrackBReplay.reachabilityEngine_globallySafe_no_boundedCounterexample",
+    "TrackBReplay.reachabilityEngine_globallySafe_sound",
     "TrackBReplay.check_iff",
     "TrackBReplay.check_sound",
     "TrackBReplay.check_complete",
-    "TrackBReplay.Kernel.transitionB_iff",
-    "TrackBReplay.SafetyCertificate.check_sound",
-    "TrackBReplay.Kernel.mem_stateLayer_iff",
-    "TrackBReplay.findBoundedCounterexample?_sound",
-    "TrackBReplay.findBoundedCounterexample?_complete",
-    "TrackBReplay.reachabilityEngine_unsafe_sound",
-    "TrackBReplay.reachabilityEngine_bounded_complete",
-    "TrackBReplay.reachabilityEngine_safeWithinBound_sound",
-    "TrackBReplay.reachabilityEngine_globallySafe_sound",
     "TrackBReplay.GlobalSafetyResult.check_sound",
-    "TrackBReplay.generated_result_passes_checker",
     "TrackBReplay.generated_global_result_is_globally_safe",
     "TrackBReplay.checked_unsafe_endToEnd",
     "TrackBReplay.checked_bounded_safe_endToEnd",
     "TrackBReplay.checked_global_endToEnd",
+    "TrackBReplay.GuardedExamples.globallySafe_of_certificate",
     (
         "TrackBReplay.GuardedExamples."
         "invalidWorkflow_not_globally_safe"
@@ -71,6 +88,10 @@ EXPECTED_AXIOM_THEOREMS = {
     ),
 }
 ALLOWED_AXIOMS = {"propext", "Classical.choice", "Quot.sound"}
+THEOREM_DECLARATION = re.compile(
+    r"^[ \t]*theorem[ \t]+([A-Za-z_][A-Za-z0-9_?'.]*)",
+    re.MULTILINE,
+)
 PROHIBITED_LEAN_TOKENS = re.compile(
     r"\b(sorry|admit|axiom|unsafe|native_decide)\b"
 )
@@ -127,8 +148,28 @@ def verify_source_boundary() -> None:
         raise SystemExit("unexpected Lake dependency; update third-party review first")
 
     lakefile = (ROOT / "lakefile.toml").read_text(encoding="utf-8")
-    if 'version = "0.2.0"' not in lakefile:
-        raise SystemExit("Lake package version is not frozen at 0.2.0")
+    if 'version = "0.2.1"' not in lakefile:
+        raise SystemExit("Lake package version is not frozen at 0.2.1")
+
+    observed_theorem_leaves: Counter[str] = Counter()
+    for path in ROOT.glob("*.lean"):
+        if path.name == "AxiomCheck.lean":
+            continue
+        text = path.read_text(encoding="utf-8")
+        observed_theorem_leaves.update(
+            declaration.rsplit(".", 1)[-1]
+            for declaration in THEOREM_DECLARATION.findall(text)
+        )
+    expected_theorem_leaves = Counter(
+        theorem.rsplit(".", 1)[-1]
+        for theorem in EXPECTED_AXIOM_THEOREMS
+    )
+    if observed_theorem_leaves != expected_theorem_leaves:
+        raise SystemExit(
+            "explicit theorem inventory differs from the complete axiom gate: "
+            f"expected {sorted(expected_theorem_leaves.elements())}, "
+            f"found {sorted(observed_theorem_leaves.elements())}"
+        )
 
     for path in ROOT.glob("*.lean"):
         text = path.read_text(encoding="utf-8")

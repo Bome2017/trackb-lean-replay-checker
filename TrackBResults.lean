@@ -36,6 +36,22 @@ structure BoundedSafetyResult where
   claimBoundary : String
   deriving Repr, DecidableEq
 
+def makeBoundedSafetyResult
+    (workflow : Workflow)
+    (visited frontier : List (KernelState workflow.variables.length)) :
+    BoundedSafetyResult :=
+  {
+    workflow := workflow.name
+    schemaVersion := workflow.schemaVersion
+    bound := workflow.bound
+    status := "SAFE_WITHIN_BOUND"
+    visited := visited.map
+      (KernelState.toBoolMap workflow.variables)
+    frontier := frontier.map
+      (KernelState.toBoolMap workflow.variables)
+    claimBoundary := safeWithinBoundClaimBoundary
+  }
+
 structure GlobalSafetyResult where
   workflow : String
   schemaVersion : String
@@ -176,13 +192,6 @@ def packageGeneratedUnsafe
     .error
       "semantic counterexample could not be packaged as a checker-accepted native result"
 
-theorem generated_result_passes_checker
-    {workflow : Workflow}
-    {trace : SemanticTrace workflow.variables.length}
-    (generated : CheckedGeneratedUnsafe workflow trace) :
-    check workflow generated.result = true :=
-  generated.accepted
-
 def makeGlobalSafetyResult
     (workflow : Workflow)
     (closure : SafetyCertificate workflow.variables.length) :
@@ -216,13 +225,6 @@ def packageGeneratedGlobalSafety
     .error
       "kernel closure could not be packaged as a checker-accepted global-safety result"
 
-theorem generated_global_result_passes_checker
-    {workflow : Workflow}
-    {closure : SafetyCertificate workflow.variables.length}
-    (generated : CheckedGeneratedGlobalSafety workflow closure) :
-    generated.result.check workflow = true :=
-  generated.accepted
-
 theorem generated_global_result_is_globally_safe
     {workflow : Workflow}
     {closure : SafetyCertificate workflow.variables.length}
@@ -245,6 +247,44 @@ def Workflow.compileChecked
   | .ok kernel => .ok { kernel, compiled := hcompile }
 
 /--
+The exact native bounded-safety artifact, the engine outcome that produced its
+state lists, and the semantic no-counterexample theorem travel as one value.
+The executable can therefore emit only `result`; it never reconstructs an
+artifact after discarding the proof-bearing outcome.
+-/
+structure CheckedGeneratedBoundedSafety
+    (workflow : Workflow)
+    (compiled : CompiledWorkflow workflow) where
+  visited : List (KernelState workflow.variables.length)
+  frontier : List (KernelState workflow.variables.length)
+  result : BoundedSafetyResult
+  engine :
+    reachabilityEngine compiled.kernel workflow.bound =
+      .safeWithinBound visited frontier
+  generated :
+    result = makeBoundedSafetyResult workflow visited frontier
+  semantic :
+    ¬∃ trace,
+      BoundedCounterexample compiled.kernel workflow.bound trace
+
+def packageGeneratedBoundedSafety
+    (workflow : Workflow)
+    (compiled : CompiledWorkflow workflow)
+    (visited frontier : List (KernelState workflow.variables.length))
+    (engine :
+      reachabilityEngine compiled.kernel workflow.bound =
+        .safeWithinBound visited frontier) :
+    CheckedGeneratedBoundedSafety workflow compiled :=
+  {
+    visited
+    frontier
+    result := makeBoundedSafetyResult workflow visited frontier
+    engine
+    generated := rfl
+    semantic := reachabilityEngine_safeWithinBound_sound engine
+  }
+
+/--
 Proof-carrying result lattice used by the executable.  Every successful
 constructor carries the theorem appropriate to its status, and every emitted
 native artifact is definitionally bound to the semantic certificate that
@@ -260,12 +300,7 @@ inductive CheckedReachability
           compiled.kernel workflow.bound trace)
       (native : CheckedGeneratedUnsafe workflow trace)
   | safeWithinBound
-      (visited frontier :
-        List (KernelState workflow.variables.length))
-      (semantic :
-        ¬∃ trace,
-          BoundedCounterexample
-            compiled.kernel workflow.bound trace)
+      (native : CheckedGeneratedBoundedSafety workflow compiled)
   | globallySafe
       (closure : SafetyCertificate workflow.variables.length)
       (semantic :
@@ -288,8 +323,9 @@ def runCheckedReachability
             (reachabilityEngine_unsafe_sound hengine)
             native
   | .safeWithinBound visited frontier =>
-      .ok <| .safeWithinBound visited frontier
-        (reachabilityEngine_safeWithinBound_sound hengine)
+      .ok <| .safeWithinBound <|
+        packageGeneratedBoundedSafety
+          workflow compiled visited frontier hengine
   | .globallySafe closure =>
       match packageGeneratedGlobalSafety workflow closure with
       | .error message => .error message
@@ -322,20 +358,28 @@ theorem checked_unsafe_endToEnd
 
 def EndToEndBoundedSafety
     (workflow : Workflow)
-    (compiled : CompiledWorkflow workflow) : Prop :=
-  ¬∃ trace,
-    BoundedCounterexample
-      compiled.kernel workflow.bound trace
+    (compiled : CompiledWorkflow workflow)
+    (result : BoundedSafetyResult) : Prop :=
+  ∃ visited frontier,
+    reachabilityEngine compiled.kernel workflow.bound =
+      .safeWithinBound visited frontier ∧
+    result = makeBoundedSafetyResult workflow visited frontier ∧
+    ¬∃ trace,
+      BoundedCounterexample
+        compiled.kernel workflow.bound trace
 
 theorem checked_bounded_safe_endToEnd
     {workflow : Workflow}
     {compiled : CompiledWorkflow workflow}
-    (semantic :
-      ¬∃ trace,
-        BoundedCounterexample
-          compiled.kernel workflow.bound trace) :
-    EndToEndBoundedSafety workflow compiled :=
-  semantic
+    (generated : CheckedGeneratedBoundedSafety workflow compiled) :
+    EndToEndBoundedSafety workflow compiled generated.result :=
+  ⟨
+    generated.visited,
+    generated.frontier,
+    generated.engine,
+    generated.generated,
+    generated.semantic
+  ⟩
 
 def EndToEndGlobalSafety
     (workflow : Workflow)
@@ -399,22 +443,6 @@ def globalSafetyResultToJson (result : GlobalSafetyResult) : Json :=
       result.closure.map boolMapToJson |>.toArray),
     ("claim_boundary", Json.str result.claimBoundary)
   ]
-
-def makeBoundedSafetyResult
-    (workflow : Workflow)
-    (visited frontier : List (KernelState workflow.variables.length)) :
-    BoundedSafetyResult :=
-  {
-    workflow := workflow.name
-    schemaVersion := workflow.schemaVersion
-    bound := workflow.bound
-    status := "SAFE_WITHIN_BOUND"
-    visited := visited.map
-      (KernelState.toBoolMap workflow.variables)
-    frontier := frontier.map
-      (KernelState.toBoolMap workflow.variables)
-    claimBoundary := safeWithinBoundClaimBoundary
-  }
 
 def boundedSafetyResultToJson (result : BoundedSafetyResult) : Json :=
   Json.mkObj [

@@ -9,7 +9,7 @@ semantics. One typed kernel is shared by:
 - closed-state global-safety certificates.
 
 The external workflow schema remains `schema_version: "0.1"`. The package
-version is `0.2.0`.
+version is `0.2.1`.
 
 ## Formal results
 
@@ -26,9 +26,10 @@ The main proved results are:
   set containing the initial state, containing no forbidden state, and closed
   under every enabled transition;
 - proof-carrying executable packaging: a successful emitted counterexample is
-  bound to both its semantic proof and ordinary native replay acceptance, while
-  a successful global result is bound to its closure and native certificate
-  acceptance; and
+  bound to both its semantic proof and ordinary native replay acceptance; a
+  bounded-safe result is bound to the exact engine outcome, generated state
+  lists, and semantic no-counterexample theorem; and a successful global result
+  is bound to its closure and native certificate acceptance; and
 - concrete global-safety theorems for the checked-in email-approval,
   delete-confirmation, and vendor-payment workflows.
 
@@ -39,8 +40,9 @@ axiom gate permits only Lean's standard `propext`, `Classical.choice`, and
 
 The packaging theorems are `checked_unsafe_endToEnd`,
 `checked_bounded_safe_endToEnd`, and `checked_global_endToEnd`. The executable
-calls the corresponding pure checked result constructor and fails instead of
-emitting an artifact if packaging does not pass.
+calls the corresponding pure checked result constructor. Unsafe and global
+packaging fail instead of emitting an artifact if their native checker rejects;
+bounded-safe output is emitted only from its exact proof-bearing wrapper.
 
 ## Result lattice
 
@@ -50,7 +52,7 @@ emitting an artifact if packaging does not pass.
 |---|---|
 | `UNSAFE` | A first-bad trace exists at or below the workflow bound, and the emitted native result passed the ordinary replay checker before output |
 | `SAFE_WITHIN_BOUND` | No semantic counterexample exists at or below the workflow bound; no all-depth claim is made |
-| `GLOBALLY_SAFE` | A finite closed reachable-state certificate passed the independent checker, proving all-depth safety in the exact declared model |
+| `GLOBALLY_SAFE` | A finite initial-containing, non-forbidden, successor-closed state-set certificate passed the checker, proving all-depth safety in the exact declared model |
 | process error | Parsing, compilation, reconstruction, packaging, or I/O failed; no safety result is emitted |
 
 All three semantic statuses use process exit code 0 and are distinguished by
@@ -147,7 +149,8 @@ The fail-closed gate:
 
 - builds every registered target;
 - runs all positive and negative tests;
-- checks all exported theorem dependencies against the axiom allowlist;
+- checks all 44 explicit theorem dependencies against the axiom allowlist and
+  fails if the source theorem inventory diverges from that complete gate;
 - rejects incomplete-proof tokens and native-evaluation proof shortcuts;
 - rejects source-tree symlinks and unexpected Lake dependencies;
 - checks exact guarded-fixture SHA-256 values; and
@@ -155,7 +158,9 @@ The fail-closed gate:
 
 Read [CLAIM_BOUNDARIES.md](CLAIM_BOUNDARIES.md) and
 [SEMANTICS_AND_INPUT_DOMAIN.md](SEMANTICS_AND_INPUT_DOMAIN.md) before citing
-the result.
+the result. The current repair record is
+[RELEASE_NOTES_v0.2.1.md](RELEASE_NOTES_v0.2.1.md); the historical v0.2.0
+notes and validation report remain scoped to commit `5a637f8c`.
 
 ## Rights
 

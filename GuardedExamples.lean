@@ -27,18 +27,14 @@ def invalidWorkflow : Workflow :=
     forbidden := []
   }
 
-def compileFixture
-    (workflow : Workflow) : Kernel workflow.variables.length :=
-  match workflow.compile with
-  | .ok kernel => kernel
-  | .error _ =>
-      {
-        variableNames :=
-          Vector.ofFn fun index => workflow.variables.get index
-        initial := Vector.ofFn fun _ => false
-        actions := []
-        forbidden := Vector.ofFn fun _ => none
-      }
+private def compileFixture
+    (workflow : Workflow)
+    (success : workflow.compile.isOk = true) :
+    CompiledWorkflow workflow :=
+  match hcompile : workflow.compile with
+  | .ok kernel => { kernel, compiled := hcompile }
+  | .error _ => by
+      simp [hcompile, Except.isOk, Except.toBool] at success
 
 theorem globallySafe_of_certificate
     {workflow : Workflow}
@@ -118,8 +114,11 @@ def emailWorkflow : Workflow :=
     ]
   }
 
+def emailCompiled : CompiledWorkflow emailWorkflow :=
+  compileFixture emailWorkflow (by rfl)
+
 def emailKernel : Kernel emailWorkflow.variables.length :=
-  compileFixture emailWorkflow
+  emailCompiled.kernel
 
 def emailCertificate :
     SafetyCertificate emailWorkflow.variables.length :=
@@ -134,7 +133,7 @@ def emailCertificate :
 
 theorem emailFixture_compile :
     emailWorkflow.compile = .ok emailKernel := by
-  rfl
+  exact emailCompiled.compiled
 
 theorem emailCertificate_check :
     SafetyCertificate.check emailKernel emailCertificate = true := by
@@ -198,8 +197,11 @@ def deleteWorkflow : Workflow :=
     ]
   }
 
+def deleteCompiled : CompiledWorkflow deleteWorkflow :=
+  compileFixture deleteWorkflow (by rfl)
+
 def deleteKernel : Kernel deleteWorkflow.variables.length :=
-  compileFixture deleteWorkflow
+  deleteCompiled.kernel
 
 def deleteCertificate :
     SafetyCertificate deleteWorkflow.variables.length :=
@@ -213,7 +215,7 @@ def deleteCertificate :
 
 theorem deleteFixture_compile :
     deleteWorkflow.compile = .ok deleteKernel := by
-  rfl
+  exact deleteCompiled.compiled
 
 theorem deleteCertificate_check :
     SafetyCertificate.check deleteKernel deleteCertificate = true := by
@@ -307,9 +309,12 @@ def vendorPaymentWorkflow : Workflow :=
     ]
   }
 
+def vendorPaymentCompiled : CompiledWorkflow vendorPaymentWorkflow :=
+  compileFixture vendorPaymentWorkflow (by rfl)
+
 def vendorPaymentKernel :
     Kernel vendorPaymentWorkflow.variables.length :=
-  compileFixture vendorPaymentWorkflow
+  vendorPaymentCompiled.kernel
 
 def vendorPaymentCertificate :
     SafetyCertificate vendorPaymentWorkflow.variables.length :=
@@ -334,7 +339,7 @@ def vendorPaymentCertificate :
 
 theorem vendorPaymentFixture_compile :
     vendorPaymentWorkflow.compile = .ok vendorPaymentKernel := by
-  rfl
+  exact vendorPaymentCompiled.compiled
 
 theorem vendorPaymentCertificate_check :
     SafetyCertificate.check
