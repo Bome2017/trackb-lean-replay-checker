@@ -27,7 +27,9 @@ GATE_SCHEMA = "trackb-release-gate-summary-v1"
 ARCHIVE_PREFIX = "trackb-lean-replay-checker-v0.2.1"
 EXPECTED_TOOLCHAIN = "leanprover/lean4:v4.32.1"
 EXPECTED_LEAN_COMMIT = "f054605aea4b840552cca2e725580bffd1e1b704"
-EXPECTED_LAKE_VERSION = "5.0.0-src+f054605"
+EXPECTED_LAKE_VERSION = (
+    "Lake version 5.0.0-src+f054605 (Lean version 4.32.1)"
+)
 EXPECTED_LAKEFILE_SHA256 = (
     "2f0c82b46229463808bf8b2c275c80c694aa6813998580340db16b6c0bf1f0fe"
 )
