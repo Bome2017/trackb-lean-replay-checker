@@ -1,0 +1,63 @@
+{
+  "schema_version": "trackb.bounded-result-emission-report.v1",
+  "result": "PASS",
+  "release_version": "0.2.1",
+  "test": "tests/test_bounded_result_emission.py",
+  "fixture": {
+    "name": "bounded_emission_binding",
+    "canonical_input_sha256": "56fd202041b01e3b7d3dc8aae6a08c9019ff0fc4dc5cdcb38f275ff43cccdc73",
+    "expected_carried_result": {
+      "workflow": "bounded_emission_binding",
+      "schema_version": "0.1",
+      "bound": 1,
+      "status": "SAFE_WITHIN_BOUND",
+      "visited": [
+        {
+          "stage_one": false,
+          "stage_two": false,
+          "bad": false
+        },
+        {
+          "stage_one": true,
+          "stage_two": false,
+          "bad": false
+        }
+      ],
+      "frontier": [
+        {
+          "stage_one": true,
+          "stage_two": false,
+          "bad": false
+        }
+      ],
+      "claim_boundary": "SAFE_WITHIN_BOUND means no bad replay exists at or below the configured bound in the exact TrackB Boolean workflow model. It does not prove global safety or safety of undeclared runtime behavior."
+    },
+    "canonical_result_sha256": "7f272e4ea4936b314bc06a6ee32e17f6da7663d7f193125aea710456be6ab9b8"
+  },
+  "checks": {
+    "checked_outcome_contains_engine_equality": "PASS",
+    "checked_outcome_contains_generated_equality": "PASS",
+    "checked_outcome_contains_semantic_evidence": "PASS",
+    "engine_lists_equal_carried_lists": "PASS",
+    "generated_result_equals_constructor_on_carried_lists": "PASS",
+    "search_executable_equals_carried_result": "PASS",
+    "search_main_uses_generated_result_directly": "PASS",
+    "search_main_has_no_bounded_result_constructor_call": "PASS"
+  },
+  "field_substitutions": {
+    "workflow": "DISTINCT_FROM_CARRIED_RESULT",
+    "schema_version": "DISTINCT_FROM_CARRIED_RESULT",
+    "bound": "DISTINCT_FROM_CARRIED_RESULT",
+    "visited": "DISTINCT_FROM_CARRIED_RESULT",
+    "frontier": "DISTINCT_FROM_CARRIED_RESULT",
+    "status": "DISTINCT_FROM_CARRIED_RESULT",
+    "claim_boundary": "DISTINCT_FROM_CARRIED_RESULT"
+  },
+  "bounded_checker_disposition": "DEFERRED",
+  "scope": "The in-process executable emits the exact BoundedSafetyResult carried by the checked SAFE_WITHIN_BOUND outcome.",
+  "nonclaims": [
+    "No independently recheckable parser or checker for supplied bounded-result JSON is implemented in v0.2.1.",
+    "The substitution checks establish inequality with the carried object; they do not establish external rejection of supplied JSON.",
+    "SAFE_WITHIN_BOUND is bounded no-counterexample evidence, not global safety."
+  ]
+}

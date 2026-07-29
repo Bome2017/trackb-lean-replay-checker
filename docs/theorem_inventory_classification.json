@@ -1,0 +1,33 @@
+{
+  "schemaVersion": "trackb-theorem-classification-v1",
+  "externallyCited": [
+    "TrackBReplay.GlobalSafetyResult.check_globallySafe",
+    "TrackBReplay.GlobalSafetyResult.check_sound",
+    "TrackBReplay.GlobalSafetyResult.metadataCheck_iff",
+    "TrackBReplay.GlobalSafetyResult.semanticCheck_sound",
+    "TrackBReplay.GuardedExamples.delete_requires_confirmation_globally_safe",
+    "TrackBReplay.GuardedExamples.email_requires_approval_globally_safe",
+    "TrackBReplay.GuardedExamples.vendor_payment_guarded_globally_safe",
+    "TrackBReplay.SafetyCertificate.check_sound",
+    "TrackBReplay.check_iff",
+    "TrackBReplay.check_sound",
+    "TrackBReplay.checked_bounded_safe_endToEnd",
+    "TrackBReplay.checked_global_endToEnd",
+    "TrackBReplay.checked_unsafe_endToEnd",
+    "TrackBReplay.reachabilityEngine_bounded_complete",
+    "TrackBReplay.reachabilityEngine_globallySafe_sound",
+    "TrackBReplay.reachabilityEngine_safeWithinBound_sound"
+  ],
+  "internalHelpers": [
+    "TrackBReplay.GuardedExamples.globallySafe_of_certificate",
+    "TrackBReplay.Kernel.mem_coveredStates_of_reachableAt",
+    "TrackBReplay.Kernel.stateLayer_mem_stateLayers_of_le",
+    "TrackBReplay.SemanticTrace.Valid.reachableAt",
+    "TrackBReplay.SemanticTrace.valid_mem_traceLayer",
+    "TrackBReplay.SemanticTrace.valid_mem_tracesUpTo",
+    "TrackBReplay.findBadState?_none_no_boundedCounterexample"
+  ],
+  "exampleModules": [
+    "GuardedExamples"
+  ]
+}

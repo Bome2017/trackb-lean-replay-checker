@@ -1,0 +1,52 @@
+{
+  "schema_version": "trackb.hostile-theorem-inventory-report.v1",
+  "result": "PASS",
+  "release_version": "0.2.1",
+  "test": "tests/test_theorem_inventory_gate.py",
+  "generator": "TheoremInventory.lean",
+  "fixture_sources": {
+    "InventoryExternalFixture": "b40b261f021ac64210c309f2491dcc41b255f7ab27848d80d49a40de80296503",
+    "InventoryHostileSyntax": "fb82595fedd8504a9028284f2db87edefea4b568eccb0e18168dfae8602ed398",
+    "InventoryHostileUnsafe": "dded3727eb0764c3d0e1153509e44ed5d06b0a3e865a10b1c85f874cd472a25f"
+  },
+  "isolation": {
+    "generated_under_system_temporary_directory": true,
+    "hostile_lean_files_in_repository": 0,
+    "hostile_olean_files_in_repository": 0
+  },
+  "cases": {
+    "multiline_theorem": "DISCOVERED",
+    "unicode_theorem": "DISCOVERED_WITH_FULL_NAME",
+    "quoted_identifier": "DISCOVERED_WITH_FULL_NAME",
+    "nested_namespace": "DISCOVERED_WITH_FULL_NAME",
+    "duplicate_leaf_names": "PRESERVED_AS_DISTINCT_FULL_NAMES",
+    "sorry_ax_dependency": "DISCOVERED_AND_GATE_FAILED",
+    "comment_text_ignored": "NOT_DISCOVERED",
+    "string_text_ignored": "NOT_DISCOVERED",
+    "definition_with_theorem_word_ignored": "NOT_DISCOVERED",
+    "generated_projection_or_recursor_not_authored": "PASS",
+    "imported_external_theorem_excluded": "PASS",
+    "local_owned_theorem_included": "PASS",
+    "multiline_attributes": "DISCOVERED",
+    "unusual_whitespace": "DISCOVERED"
+  },
+  "safe_fixture_gate": {
+    "exit_code": 0,
+    "result": "PASS",
+    "all_owned_constant_axiom_gate": "PASS",
+    "theorem_axiom_gate": "PASS"
+  },
+  "sorry_fixture_gate": {
+    "exit_code": 1,
+    "result": "FAIL",
+    "all_owned_constant_axiom_gate": "FAIL",
+    "theorem_axiom_gate": "FAIL",
+    "forbidden_axiom": "sorryAx",
+    "offending_theorem": "InventoryHostileUnsafe.sorryAxDependent"
+  },
+  "nonclaims": [
+    "The hostile modules are generated and compiled only under a system temporary directory.",
+    "The source-tracked test generator is not a TrackB release theorem module.",
+    "Generated projections and recursors remain environment constants but are not counted as authored theorems."
+  ]
+}

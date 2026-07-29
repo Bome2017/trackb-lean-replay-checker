@@ -82,6 +82,36 @@ def GlobalSafetyResult.metadataCheck
   result.status == "GLOBALLY_SAFE" &&
   result.claimBoundary == globalSafetyClaimBoundary
 
+/--
+The proposition-level meaning of the native metadata checker.  This mirrors
+exactly the fields checked by `metadataCheck`; it intentionally says nothing
+about the semantic validity of `result.closure`.
+-/
+def GlobalSafetyResult.MetadataConsistent
+    (workflow : Workflow)
+    (result : GlobalSafetyResult) : Prop :=
+  workflow.WellFormed = true ∧
+  result.workflow = workflow.name ∧
+  result.schemaVersion = workflow.schemaVersion ∧
+  result.bound = workflow.bound ∧
+  result.status = "GLOBALLY_SAFE" ∧
+  result.claimBoundary = globalSafetyClaimBoundary
+
+/--
+Executable metadata acceptance is equivalent to the independently stated
+field-consistency proposition.
+-/
+theorem GlobalSafetyResult.metadataCheck_iff
+    {workflow : Workflow}
+    {result : GlobalSafetyResult} :
+    result.metadataCheck workflow = true ↔
+      result.MetadataConsistent workflow := by
+  simp [
+    GlobalSafetyResult.metadataCheck,
+    GlobalSafetyResult.MetadataConsistent,
+    and_assoc
+  ]
+
 def GlobalSafetyResult.semanticCheck
     (workflow : Workflow)
     (result : GlobalSafetyResult) : Bool :=
@@ -101,17 +131,16 @@ def GlobalSafetyResult.check
   result.semanticCheck workflow
 
 /--
-A native global-safety result accepted by the executable checker entails the
-unbounded reachability proposition over the one frozen kernel.
+Semantic acceptance independently entails the unbounded reachability
+proposition over the exact successfully compiled kernel.  The proof uses the
+checked closure certificate and `SafetyCertificate.check_sound`; it does not
+project a stored global-safety proof from the native result.
 -/
-theorem GlobalSafetyResult.check_sound
+theorem GlobalSafetyResult.semanticCheck_sound
     {workflow : Workflow}
     {result : GlobalSafetyResult}
-    (hcheck : result.check workflow = true) :
+    (hsemantic : result.semanticCheck workflow = true) :
     workflow.GloballySafe := by
-  unfold GlobalSafetyResult.check at hcheck
-  simp only [Bool.and_eq_true] at hcheck
-  have hsemantic := hcheck.2
   unfold GlobalSafetyResult.semanticCheck at hsemantic
   cases hcompile : workflow.compile with
   | error message =>
@@ -129,6 +158,33 @@ theorem GlobalSafetyResult.check_sound
         hcompile,
         SafetyCertificate.check_sound hcertificate
       ⟩
+
+/--
+The complete native checker proves both independent halves: semantic
+all-depth safety and exact metadata consistency.
+-/
+theorem GlobalSafetyResult.check_sound
+    {workflow : Workflow}
+    {result : GlobalSafetyResult}
+    (hcheck : result.check workflow = true) :
+    workflow.GloballySafe ∧ result.MetadataConsistent workflow := by
+  unfold GlobalSafetyResult.check at hcheck
+  simp only [Bool.and_eq_true] at hcheck
+  exact ⟨
+    GlobalSafetyResult.semanticCheck_sound hcheck.2,
+    GlobalSafetyResult.metadataCheck_iff.mp hcheck.1
+  ⟩
+
+/--
+Compatibility projection for callers that need only the semantic consequence
+of complete native checker acceptance.
+-/
+theorem GlobalSafetyResult.check_globallySafe
+    {workflow : Workflow}
+    {result : GlobalSafetyResult}
+    (hcheck : result.check workflow = true) :
+    workflow.GloballySafe :=
+  (GlobalSafetyResult.check_sound hcheck).1
 
 def SemanticTrace.toNativeSteps
     (workflow : Workflow) :
@@ -231,7 +287,7 @@ theorem generated_global_result_is_globally_safe
     {closure : SafetyCertificate workflow.variables.length}
     (generated : CheckedGeneratedGlobalSafety workflow closure) :
     workflow.GloballySafe :=
-  GlobalSafetyResult.check_sound generated.accepted
+  GlobalSafetyResult.check_globallySafe generated.accepted
 
 /--
 A compiled workflow packages the exact kernel together with the equality that
@@ -399,7 +455,7 @@ theorem checked_global_endToEnd
     closure,
     native.generated,
     native.accepted,
-    GlobalSafetyResult.check_sound native.accepted
+    GlobalSafetyResult.check_globallySafe native.accepted
   ⟩
 
 def boolMapToJson (mapping : BoolMap) : Json :=

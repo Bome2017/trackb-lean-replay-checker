@@ -8,6 +8,7 @@ defaultTargets = [
   "TrackBResults",
   "GuardedExamples",
   "AxiomCheck",
+  "trackb-theorem-inventory",
   "trackb-replay-check",
   "trackb-reachability",
   "trackb-global-safety-check",
@@ -34,6 +35,10 @@ name = "GuardedExamples"
 
 [[lean_lib]]
 name = "AxiomCheck"
+
+[[lean_exe]]
+name = "trackb-theorem-inventory"
+root = "TheoremInventory"
 
 [[lean_exe]]
 name = "trackb-replay-check"

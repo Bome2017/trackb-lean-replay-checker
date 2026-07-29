@@ -85,7 +85,16 @@ set. The relevant results are:
 
 - `TrackBReplay.SafetyCertificate.check_sound`;
 - `TrackBReplay.reachabilityEngine_globallySafe_sound`; and
-- `TrackBReplay.GlobalSafetyResult.check_sound`.
+- `TrackBReplay.GlobalSafetyResult.semanticCheck_sound`.
+
+Native metadata is a separate proposition:
+`TrackBReplay.GlobalSafetyResult.MetadataConsistent`. The theorem
+`TrackBReplay.GlobalSafetyResult.metadataCheck_iff` states that the executable
+metadata check is equivalent to that proposition. The full
+`TrackBReplay.GlobalSafetyResult.check_sound` theorem returns both
+`Workflow.GloballySafe` and `MetadataConsistent`; neither half is presented as
+establishing the other. `check_globallySafe` is the compatibility projection
+for callers that need only the semantic consequence.
 
 `TrackBReplay.checked_global_endToEnd` additionally binds the emitted native
 global result to the exact closure that generated it, its checker acceptance,

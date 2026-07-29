@@ -1,0 +1,41 @@
+{
+  "baseline": {
+    "commit": "07fe7333a004330c78eb2be484ae10d62e42c139",
+    "tree": "c8c71b580fb7173fe844654fe54b0612a90037d0"
+  },
+  "checks": {
+    "bounded_result": {
+      "carries_engine_outcome": true,
+      "carries_exact_native_result": true,
+      "carries_frontier": true,
+      "carries_generation_equality": true,
+      "carries_semantic_no_counterexample": true,
+      "carries_visited": true,
+      "declaration": "TrackBReplay.CheckedGeneratedBoundedSafety",
+      "search_main_emits_carried_result": true,
+      "status": "PASS"
+    },
+    "certificate_terminology": {
+      "initial_containing": true,
+      "non_forbidden": true,
+      "status": "PASS",
+      "successor_closed": true,
+      "supplied_members_claimed_reachable": false
+    },
+    "fixture_compilation": {
+      "fabricated_fallback_kernel": false,
+      "proof_of_success_required": true,
+      "returns_compiled_workflow": true,
+      "status": "PASS"
+    },
+    "projection_wrappers": {
+      "generated_global_result_passes_checker_present": false,
+      "generated_result_passes_checker_present": false,
+      "remaining_packaging_theorems_described_as_packaging": true,
+      "status": "PASS"
+    }
+  },
+  "recorded_at": "2026-07-29T14:53:15Z",
+  "result": "PASS",
+  "schema_version": "trackb-t1-repair-confirmation-v1"
+}

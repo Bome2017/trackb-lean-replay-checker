@@ -38,6 +38,14 @@ use a fixture-specific proof assumption or a native evaluation shortcut. The
 axiom gate permits only Lean's standard `propext`, `Classical.choice`, and
 `Quot.sound`.
 
+Global-result semantics and metadata are proved separately.
+`GlobalSafetyResult.semanticCheck_sound` derives `workflow.GloballySafe` from
+successful compilation and the checked finite safety certificate.
+`GlobalSafetyResult.metadataCheck_iff` characterizes the workflow, schema,
+bound, status, and claim-boundary fields, while
+`GlobalSafetyResult.check_sound` derives both semantic safety and metadata
+consistency from the full native checker.
+
 The packaging theorems are `checked_unsafe_endToEnd`,
 `checked_bounded_safe_endToEnd`, and `checked_global_endToEnd`. The executable
 calls the corresponding pure checked result constructor. Unsafe and global
@@ -142,19 +150,54 @@ See [`docs/Z3_WITNESS_PROPOSER.md`](docs/Z3_WITNESS_PROPOSER.md).
 ## Validate the release candidate
 
 ```sh
-PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify_release.py
+candidate_commit="$(git rev-parse HEAD)"
+candidate_tree="$(git rev-parse 'HEAD^{tree}')"
+candidate_branch="$(git branch --show-current)"
+candidate_remote="$(git remote get-url origin)"
+
+PYTHONDONTWRITEBYTECODE=1 python3 scripts/verify_release.py \
+  --expected-commit "$candidate_commit" \
+  --expected-tree "$candidate_tree" \
+  --expected-branch "$candidate_branch" \
+  --expected-remote "$candidate_remote" \
+  --require-no-lake-at-start
 ```
 
 The fail-closed gate:
 
-- builds every registered target;
-- runs all positive and negative tests;
-- checks all 44 explicit theorem dependencies against the axiom allowlist and
-  fails if the source theorem inventory diverges from that complete gate;
-- rejects incomplete-proof tokens and native-evaluation proof shortcuts;
-- rejects source-tree symlinks and unexpected Lake dependencies;
-- checks exact guarded-fixture SHA-256 values; and
-- runs the Lean fixture-to-theorem correspondence executable.
+- checks exact Git, tree, remote, pinned-toolchain, and source identities;
+- builds every registered target with no unapproved warnings;
+- regenerates the authoritative theorem inventory from Lean's elaborated
+  environments and byte-compares it with the reviewed inventory;
+- audits every owned theorem constant and every owned constant for forbidden
+  transitive axioms, without using source regexes or a manual theorem count as
+  discovery authority;
+- runs the hostile theorem-discovery gate, bounded-output regression, Z3
+  proposer tests, and all other positive and negative tests;
+- checks the semantic/metadata theorem split, guarded-fixture hashes, and
+  parser-to-theorem correspondence;
+- rejects incomplete-proof tokens, unreviewed unsafe declarations,
+  native-evaluation proof shortcuts, symlinks, sibling dependencies, caches,
+  generated objects, and absolute private paths; and
+- creates two byte-identical deterministic source archives, verifies exact
+  source equivalence and safe archive metadata, then proves the before/after
+  source fingerprint is unchanged.
+
+The release gate intentionally rejects a preexisting `.lake`, object file,
+cache, symlink, or untracked source. Run it from a fresh clone. Source-only
+reproduction additionally requires an extraction with no `.git` and supplies
+the expected archive and archive-manifest hashes; the gate regenerates both
+and requires byte-identical digests.
+
+`TheoremInventory.lean` is audit tooling. Its three `unsafe` runtime
+declarations are narrowly required to invoke Lean's module-loading API and are
+excluded from the owned theorem surface; the verifier allows exactly those
+reviewed declarations and no others. See
+[docs/THEOREM_INVENTORY_POLICY.md](docs/THEOREM_INVENTORY_POLICY.md).
+
+The independently recheckable bounded-result JSON checker is deliberately
+deferred; v0.2.1's required in-process exact-object binding is complete. See
+[docs/BOUNDED_RESULT_CHECKER_DECISION.md](docs/BOUNDED_RESULT_CHECKER_DECISION.md).
 
 Read [CLAIM_BOUNDARIES.md](CLAIM_BOUNDARIES.md) and
 [SEMANTICS_AND_INPUT_DOMAIN.md](SEMANTICS_AND_INPUT_DOMAIN.md) before citing
